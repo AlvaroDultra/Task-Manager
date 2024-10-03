@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="./dashboard.css">
+</head>
+<body>
+    <header>
+    <img src="./logo.webp" alt="logo" height="130" width="130" class="logo">
+    </header>
+    <div class="dashboard" id="dashboard">
+       
+    </div>
+    <button class="addCardBtn" id="addCardBtn">Adicionar Nova Tarefa</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-lite.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyANglf2KO_xXEehsZDGwbYVj_ZjsKIhwA0",
+            authDomain: "task-65428.firebaseapp.com",
+            projectId: "task-65428",
+            storageBucket: "task-65428.appspot.com",
+            messagingSenderId: "607171399265",
+            appId: "1:607171399265:web:a121d6244e73da1dfce420",
+            measurementId: "G-HDLKT10LZL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadTasks() {
+            const dashboard = document.getElementById('dashboard');
+            const tarefasCollection = collection(db, 'tarefas');
+            const tarefasSnapshot = await getDocs(tarefasCollection);
+            
+            dashboard.innerHTML = '';
+
+            tarefasSnapshot.forEach(doc => {
+                const tarefaData = doc.data();
+                const docId = doc.id; 
+                const newCard = document.createElement('div');
+                newCard.classList.add('card');
+                
+                newCard.innerHTML = `
+                    <h1>${tarefaData.tarefa}</h1>
+                    <p>Adicionado por ${tarefaData.adicionado}</p>
+                    <button class="remove-button" data-id="${docId}">Remover</button>
+                `;
+                
+                dashboard.appendChild(newCard);
+                
+                const removeBtn = newCard.querySelector('.remove-button');
+                addRemoveEvent(removeBtn);
+            });
+        }
+
+        function addRemoveEvent(button) {
+            button.addEventListener('click', async function() {
+                const card = this.closest('.card');
+                const taskId = this.getAttribute('data-id');
+
+                if (taskId) {
+                    await deleteDoc(doc(db, 'tarefas', taskId));
+                    card.remove();
+                } else {
+                    console.error('Erro: taskId não encontrado.');
+                }
+            });
+        }
+
+        async function addNewCard() {
+            const tarefa = prompt("Digite a nova tarefa:");
+            const adicionado = prompt("Quem adicionou a tarefa?");
+            
+            if (tarefa && adicionado) {
+                const docRef = await addDoc(collection(db, "tarefas"), {
+                    tarefa: tarefa,
+                    adicionado: adicionado
+                });
+                
+                const dashboard = document.getElementById('dashboard');
+                const newCard = document.createElement('div');
+                newCard.classList.add('card');
+                
+                newCard.innerHTML = `
+                    <h1>${tarefa}</h1>
+                    <p>Adicionado por ${adicionado}</p>
+                    <button class="remove-button" data-id="${docRef.id}">Remover</button>
+                `;
+                
+                dashboard.appendChild(newCard);
+                
+                const removeBtn = newCard.querySelector('.remove-button');
+                addRemoveEvent(removeBtn);
+            } else {
+                alert("Por favor, preencha todos os campos.");
+            }
+        }
+
+        window.addEventListener('load', loadTasks);
+
+        
+        document.getElementById('addCardBtn').addEventListener('click', addNewCard);
+    </script>
+</body>
+</html>
